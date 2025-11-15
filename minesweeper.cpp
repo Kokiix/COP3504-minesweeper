@@ -11,11 +11,11 @@ void GameInstance::read_config_file() {
     // TODO
     // placeholder:
     n_rows = 10;
-    n_cols = 10;
+    n_cols = 20;
 }
 
 void GameInstance::load_image_assets() {
-    tile_texture = sf::Texture("../assets/images/tile_hidden.png", false, sf::IntRect({10, 10}, {50, 50}));
+    tile_texture = sf::Texture("../assets/images/tile_hidden.png", false, sf::IntRect({0, 0}, {32, 32}));
 }
 
 void GameInstance::welcome_loop() {
@@ -23,15 +23,21 @@ void GameInstance::welcome_loop() {
 }
 
 void GameInstance::game_loop() {
-    sf::RenderWindow window(sf::VideoMode({static_cast<unsigned>(32 * n_rows + 100), static_cast<unsigned>(n_cols * 32)}), "Minesweeper", sf::Style::Close);
-    sf::Sprite test(tile_texture);
-    test.setPosition(sf::Vector2f(50, 50));
     while (window.isOpen()) {
         window.clear();
-        window.draw(test);
+        draw_tiles();
         window.display();
         while (const std::optional event = window.pollEvent()) {
             if (event->is<sf::Event::Closed>()) window.close();
         }
     }
+}
+
+void GameInstance::draw_tiles() {
+    for (size_t i = 0; i < n_cols; i++) {
+        for (size_t j = 0; j < n_rows; j++) {
+            window.draw(board[i][j].sprite);
+        }
+    }
+
 }
