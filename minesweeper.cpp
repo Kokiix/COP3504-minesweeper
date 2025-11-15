@@ -15,7 +15,8 @@ void GameInstance::read_config_file() {
 }
 
 void GameInstance::load_image_assets() {
-    tile_texture = sf::Texture("../assets/images/tile_hidden.png", false, sf::IntRect({0, 0}, {32, 32}));
+    hidden_tile_texture = sf::Texture("../assets/images/tile_hidden.png", false, sf::IntRect({0, 0}, {32, 32}));
+    revealed_tile_texture = sf::Texture("../assets/images/tile_revealed.png", false, sf::IntRect({0, 0}, {32, 32}));
 }
 
 void GameInstance::welcome_loop() {
@@ -23,21 +24,26 @@ void GameInstance::welcome_loop() {
 }
 
 void GameInstance::game_loop() {
+    redraw_screen();
     while (window.isOpen()) {
-        window.clear();
-        draw_tiles();
-        window.display();
         while (const std::optional event = window.pollEvent()) {
-            if (event->is<sf::Event::Closed>()) window.close();
+            if (event->is<sf::Event::MouseButtonPressed>()) {
+                sf::Vector2i clickPos = sf::Mouse::getPosition(window);
+                board[clickPos.x / 32][clickPos.y / 32].handle_click(revealed_tile_texture);
+                redraw_screen();
+            }
+            else if (event->is<sf::Event::Closed>()) window.close();
         }
     }
 }
 
-void GameInstance::draw_tiles() {
+void GameInstance::redraw_screen() {
+    window.clear(sf::Color::White);
     for (size_t i = 0; i < n_cols; i++) {
         for (size_t j = 0; j < n_rows; j++) {
             window.draw(board[i][j].sprite);
         }
     }
-
+    // TODO: draw dashboard
+    window.display();
 }

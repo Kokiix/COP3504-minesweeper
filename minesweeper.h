@@ -12,12 +12,17 @@ public:
     Tile(float x, float y, const sf::Texture &texture): sprite(texture) {
         sprite.setPosition({x * 32, y * 32});
     }
+
+    void handle_click(const sf::Texture &revealed) {
+        sprite.setTexture(revealed);
+    }
 };
 
 class GameInstance {
     size_t n_rows;
     size_t n_cols;
-    sf::Texture tile_texture;
+    sf::Texture hidden_tile_texture;
+    sf::Texture revealed_tile_texture;
     sf::RenderWindow window;
     std::vector<std::vector<Tile>> board;
 
@@ -27,7 +32,7 @@ class GameInstance {
     void welcome_loop();
     void game_loop();
 
-    void draw_tiles();
+    void redraw_screen();
 public:
     GameInstance() {
         read_config_file();
@@ -40,7 +45,7 @@ public:
         for (size_t i = 0; i < n_cols; i++) {
             board.push_back(std::vector<Tile>());
             for (size_t j = 0; j < n_rows; j++) {
-                board[i].push_back(Tile(i, j, tile_texture));
+                board[i].push_back(Tile(i, j, hidden_tile_texture));
             }
         }
 
