@@ -1,5 +1,7 @@
 #include "minesweeper.h"
 
+#include <random>
+
 #include "SFML/Window/VideoMode.hpp"
 #include "SFML/Window/Window.hpp"
 #include <SFML/Graphics/Texture.hpp>
@@ -12,6 +14,7 @@ void GameInstance::read_config_file() {
     // placeholder:
     n_rows = 10;
     n_cols = 20;
+    n_mines = 10;
 }
 
 void GameInstance::load_image_assets() {
@@ -21,6 +24,23 @@ void GameInstance::load_image_assets() {
 
 void GameInstance::welcome_loop() {
     // TODO
+}
+
+void GameInstance::board_setup() {
+    for (size_t i = 0; i < n_cols; i++) {
+        board.push_back(std::vector<Tile>());
+        for (size_t j = 0; j < n_rows; j++) {
+            board[i].push_back(Tile(i, j, hidden_tile_texture));
+        }
+    }
+
+    std::random_device rd;
+    std::mt19937 rng(rd());
+    std::uniform_int_distribution<int> random_col(0, n_cols - 1);
+    std::uniform_int_distribution<int> random_row(0, n_rows - 1);
+    for (size_t i = 0; i < n_mines; i++) {
+        board[random_col(rng)][random_row(rng)].is_mine = true;
+    }
 }
 
 void GameInstance::game_loop() {

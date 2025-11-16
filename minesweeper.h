@@ -8,6 +8,7 @@
 class Tile {
 public:
     bool hidden = true;
+    bool is_mine = false;
     sf::Sprite sprite;
     Tile(float x, float y, const sf::Texture &texture): sprite(texture) {
         sprite.setPosition({x * 32, y * 32});
@@ -21,6 +22,7 @@ public:
 class GameInstance {
     size_t n_rows;
     size_t n_cols;
+    size_t n_mines;
     sf::Texture hidden_tile_texture;
     sf::Texture revealed_tile_texture;
     sf::RenderWindow window;
@@ -30,6 +32,7 @@ class GameInstance {
     void read_config_file();
     void load_image_assets();
     void welcome_loop();
+    void board_setup();
     void game_loop();
 
     void redraw_screen();
@@ -42,14 +45,9 @@ public:
             sf::VideoMode(
                 {static_cast<unsigned>(32 * n_cols), static_cast<unsigned>(n_rows * 32 + 100)}),
             "Minesweeper", sf::Style::Close);
-        for (size_t i = 0; i < n_cols; i++) {
-            board.push_back(std::vector<Tile>());
-            for (size_t j = 0; j < n_rows; j++) {
-                board[i].push_back(Tile(i, j, hidden_tile_texture));
-            }
-        }
 
         welcome_loop();
+        board_setup();
         game_loop();
     }
 };
