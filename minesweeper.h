@@ -9,13 +9,16 @@ class Tile {
 public:
     bool hidden = true;
     bool is_mine = false;
-    sf::Sprite sprite;
-    Tile(float x, float y, const sf::Texture &texture): sprite(texture) {
-        sprite.setPosition({x * 32, y * 32});
+    size_t n_mines_near = 0;
+    sf::Sprite tile_sprite;
+    sf::Sprite* number_sprite = nullptr;
+    Tile(float x, float y, const sf::Texture &texture): tile_sprite(texture) {
+        tile_sprite.setPosition({x * 32, y * 32});
     }
 
     void handle_click(const sf::Texture &revealed) {
-        sprite.setTexture(revealed);
+        tile_sprite.setTexture(revealed);
+
     }
 };
 
@@ -25,6 +28,7 @@ class GameInstance {
     size_t n_mines;
     sf::Texture hidden_tile_texture;
     sf::Texture revealed_tile_texture;
+    sf::Texture number_textures[9];
     sf::RenderWindow window;
     std::vector<std::vector<Tile>> board;
 

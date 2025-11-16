@@ -1,6 +1,7 @@
 #include "minesweeper.h"
 
 #include <random>
+#include <sstream>
 
 #include "SFML/Window/VideoMode.hpp"
 #include "SFML/Window/Window.hpp"
@@ -20,6 +21,11 @@ void GameInstance::read_config_file() {
 void GameInstance::load_image_assets() {
     hidden_tile_texture = sf::Texture("../assets/images/tile_hidden.png", false, sf::IntRect({0, 0}, {32, 32}));
     revealed_tile_texture = sf::Texture("../assets/images/tile_revealed.png", false, sf::IntRect({0, 0}, {32, 32}));
+    for (size_t i = 1; i < 9; i++) {
+        std::ostringstream path;
+        path << "../assets/images/number_" << i << ".png";
+        number_textures[i] = sf::Texture(path.str(), false, sf::IntRect({0, 0}, {32, 32}));
+    }
 }
 
 void GameInstance::welcome_loop() {
@@ -61,7 +67,7 @@ void GameInstance::redraw_screen() {
     window.clear(sf::Color::White);
     for (size_t i = 0; i < n_cols; i++) {
         for (size_t j = 0; j < n_rows; j++) {
-            window.draw(board[i][j].sprite);
+            window.draw(board[i][j].tile_sprite);
         }
     }
     // TODO: draw dashboard
