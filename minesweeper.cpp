@@ -13,14 +13,15 @@
 void GameInstance::read_config_file() {
     // TODO
     // placeholder:
-    n_rows = 10;
-    n_cols = 20;
-    n_mines = 10;
+    n_rows = 16;
+    n_cols = 16;
+    n_mines = 40;
 }
 
 void GameInstance::load_image_assets() {
     hidden_tile_texture = sf::Texture("../assets/images/tile_hidden.png", false, sf::IntRect({0, 0}, {32, 32}));
     revealed_tile_texture = sf::Texture("../assets/images/tile_revealed.png", false, sf::IntRect({0, 0}, {32, 32}));
+    mine_texture = sf::Texture("../assets/images/mine.png", false, sf::IntRect({0, 0}, {32, 32}));
     for (size_t i = 1; i < 9; i++) {
         std::ostringstream path;
         path << "../assets/images/number_" << i << ".png";
@@ -48,10 +49,18 @@ void GameInstance::board_setup() {
         int col = random_col(rng);
         int row = random_row(rng);
         board[col][row].is_mine = true;
-        board[col][row].tile_sprite.setTexture(revealed_tile_texture);
-        // TODO: create f that takes callback for each direction
-        if (col != 0) {board[col - 1][row].n_mines_near++;}
-        if (col != n_cols - 1) {board[col + 1][row].n_mines_near++;}
+        board[col][row].tile_sprite.setTexture(mine_texture);
+
+        if (col != 0) {
+            board[col - 1][row].n_mines_near++;
+            if (row != 0) {board[col - 1][row - 1].n_mines_near++;}
+            if (row != n_rows - 1) {board[col - 1][row + 1].n_mines_near++;}
+        }
+        if (col != n_cols - 1) {
+            board[col + 1][row].n_mines_near++;
+            if (row != 0) {board[col + 1][row - 1].n_mines_near++;}
+            if (row != n_rows + 1) {board[col + 1][row + 1].n_mines_near++;}
+        }
         if (row != 0) {board[col][row - 1].n_mines_near++;}
         if (row != n_rows - 1) {board[col][row + 1].n_mines_near++;}
     }
@@ -62,18 +71,31 @@ void GameInstance::game_loop() {
     while (window.isOpen()) {
         while (const std::optional event = window.pollEvent()) {
             if (event->is<sf::Event::MouseButtonPressed>()) {
-                sf::Vector2i clickPos = sf::Mouse::getPosition(window);
-                float x = clickPos.x / 32;
-                float y = clickPos.y / 32;
-                Tile clicked = board[x][y];
-                board[x][y].tile_sprite.setTexture(revealed_tile_texture);
-                if (clicked.n_mines_near > 0) {
-                    board[x][y].number_sprite = new sf::Sprite(number_textures[clicked.n_mines_near]);
-                    board[x][y].number_sprite->setPosition({x * 32, y * 32});
-                }
+                handle_click();
                 redraw_screen();
             }
             else if (event->is<sf::Event::Closed>()) window.close();
+        }
+    }
+}
+
+void GameInstance::handle_click() {
+    sf::Vector2i clickPos = sf::Mouse::getPosition(window);
+    clear_tile(clickPos.x / 32, clickPos.y / 32);
+}
+
+void GameInstance::clear_tile(float x, float y) {
+    if (board[x][y].hidden && !board[x][y].is_mine) {
+        board[x][y].tile_sprite.setTexture(revealed_tile_texture);
+        board[x][y].hidden = false;
+        if (board[x][y].n_mines_near > 0) {
+            board[x][y].number_sprite = new sf::Sprite(number_textures[board[x][y].n_mines_near]);
+            board[x][y].number_sprite->setPosition({x * 32, y * 32});
+        } else {
+            if (x != 0) {clear_tile(x - 1, y);}
+            if (x != n_cols - 1) {clear_tile(x + 1, y);}
+            if (y != 0) {clear_tile(x, y - 1);}
+            if (y != n_rows - 1) {clear_tile(x, y + 1);}
         }
     }
 }

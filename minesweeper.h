@@ -25,6 +25,7 @@ class GameInstance {
     size_t n_mines;
     sf::Texture hidden_tile_texture;
     sf::Texture revealed_tile_texture;
+    sf::Texture mine_texture;
     sf::Texture number_textures[9];
     sf::RenderWindow window;
     std::vector<std::vector<Tile>> board;
@@ -37,6 +38,8 @@ class GameInstance {
     void game_loop();
 
     void redraw_screen();
+    void handle_click();
+    void clear_tile(float x, float y);
 public:
     GameInstance() {
         read_config_file();
