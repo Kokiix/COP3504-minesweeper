@@ -16,10 +16,7 @@ public:
         tile_sprite.setPosition({x * 32, y * 32});
     }
 
-    void handle_click(const sf::Texture &revealed) {
-        tile_sprite.setTexture(revealed);
-
-    }
+    ~Tile() {if (number_sprite) delete number_sprite;}
 };
 
 class GameInstance {
