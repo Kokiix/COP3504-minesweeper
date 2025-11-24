@@ -9,14 +9,13 @@ class Tile {
 public:
     bool hidden = true;
     bool is_mine = false;
+    bool flagged = false;
+    bool draw_overlay = false;
     size_t n_mines_near = 0;
     sf::Sprite tile_sprite;
-    sf::Sprite* number_sprite = nullptr;
-    Tile(float x, float y, const sf::Texture &texture): tile_sprite(texture) {
-        tile_sprite.setPosition({x * 32, y * 32});
-    }
+    sf::Sprite overlay_sprite;
 
-    ~Tile() {if (number_sprite) delete number_sprite;}
+    Tile(const sf::Texture &texture): tile_sprite(texture), overlay_sprite(texture) {}
 };
 
 class GameInstance {
@@ -26,6 +25,7 @@ class GameInstance {
     sf::Texture hidden_tile_texture;
     sf::Texture revealed_tile_texture;
     sf::Texture mine_texture;
+    sf::Texture flag_texture;
     sf::Texture number_textures[9];
     sf::RenderWindow window;
     std::vector<std::vector<Tile>> board;
@@ -38,8 +38,9 @@ class GameInstance {
     void game_loop();
 
     void redraw_screen();
-    void handle_click();
+    void handle_click(const sf::Event::MouseButtonPressed* event);
     void clear_tile(float x, float y);
+    void toggle_flag(float x, float y);
 public:
     GameInstance() {
         read_config_file();
@@ -54,4 +55,5 @@ public:
         board_setup();
         game_loop();
     }
+    ~GameInstance();
 };
