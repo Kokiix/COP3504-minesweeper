@@ -41,6 +41,7 @@ class GameInstance {
     void handle_click(const sf::Event::MouseButtonPressed* event);
     void clear_tile(float x, float y);
     void toggle_flag(float x, float y);
+    void operateOnNeighbors(float x, float y, std::function<void (float x, float y)> callback);
 public:
     GameInstance() {
         read_config_file();

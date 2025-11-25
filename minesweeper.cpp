@@ -15,8 +15,8 @@ void GameInstance::read_config_file() {
     // TODO
     // placeholder:
     n_rows = 16;
-    n_cols = 16;
-    n_mines = 40;
+    n_cols = 25;
+    n_mines = 60;
 }
 
 void GameInstance::load_image_assets() {
@@ -58,24 +58,13 @@ void GameInstance::board_setup() {
         }
     }
 
-    for (size_t col = 0; col < n_rows; col++) {
+    for (size_t col = 0; col < n_cols; col++) {
         for (size_t row = 0; row < n_rows; row++) {
             if (board[col][row].is_mine) {
                 board[col][row].is_mine = true;
-                board[col][row].tile_sprite.setTexture(mine_texture);
+                // board[col][row].tile_sprite.setTexture(mine_texture);
 
-                if (col != 0) {
-                    board[col - 1][row].n_mines_near++;
-                    if (row != 0) {board[col - 1][row - 1].n_mines_near++;}
-                    if (row != n_rows - 1) {board[col - 1][row + 1].n_mines_near++;}
-                }
-                if (col != n_cols - 1) {
-                    board[col + 1][row].n_mines_near++;
-                    if (row != 0) {board[col + 1][row - 1].n_mines_near++;}
-                    if (row != n_rows - 1) {board[col + 1][row + 1].n_mines_near++;}
-                }
-                if (row != 0) {board[col][row - 1].n_mines_near++;}
-                if (row != n_rows - 1) {board[col][row + 1].n_mines_near++;}
+                operateOnNeighbors(col, row, [this](float x, float y) {board[x][y].n_mines_near++;});
             }
         }
     }
@@ -111,10 +100,7 @@ void GameInstance::clear_tile(float x, float y) {
             board[x][y].overlay_sprite.setTexture(number_textures[board[x][y].n_mines_near]);
             board[x][y].draw_overlay = true;
         } else {
-            if (x != 0) {clear_tile(x - 1, y);}
-            if (x != n_cols - 1) {clear_tile(x + 1, y);}
-            if (y != 0) {clear_tile(x, y - 1);}
-            if (y != n_rows - 1) {clear_tile(x, y + 1);}
+            operateOnNeighbors(x, y, [this](float x, float y) {this->clear_tile(x, y);});
         }
     }
 }
@@ -142,6 +128,17 @@ void GameInstance::redraw_screen() {
     }
     // // TODO: draw dashboard
     window.display();
+}
+
+void GameInstance::operateOnNeighbors(float x, float y, std::function<void (float x, float y)> callback) {
+    int col_end = x == n_cols - 1 ? 1 : 2;
+    int row_end = y == n_rows - 1 ? 1 : 2;
+    for (int col_offset = x == 0 ? 0 : -1; col_offset < col_end; col_offset++) {
+        for (int row_offset = y == 0 ? 0 : -1; row_offset < row_end; row_offset++) {
+            if (col_offset == 0 && row_offset == 0) continue;
+            callback(x + col_offset, y + row_offset);
+        }
+    }
 }
 
 GameInstance::~GameInstance() {
