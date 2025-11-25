@@ -24,13 +24,17 @@ class GameInstance {
     size_t n_rows;
     size_t n_cols;
     size_t n_mines;
+    size_t tiles_left_to_reveal;
     sf::Texture number_textures[9];
+    sf::Texture stopwatch_textures[10];
     sf::RenderWindow window;
     std::map<std::string, sf::Texture*> textures;
     std::map<std::string, sf::Sprite*> UI_elements;
     std::vector<std::vector<Tile>> board;
     bool debug_mode = false;
     bool game_over = false;
+    bool paused = false;
+    size_t time = 0;
     std::mt19937 rng;
 
 
@@ -42,12 +46,12 @@ class GameInstance {
     void game_loop();
 
     void redraw_screen();
+    void display_time();
     void handle_click(const sf::Event::MouseButtonPressed* event);
     void clear_tile(float x, float y);
     void toggle_flag(float x, float y);
-    // void reset_board();
-    void operateOnNeighbors(float x, float y, std::function<void (float x, float y)> callback);
     void toggle_debug();
+    void operateOnNeighbors(float x, float y, std::function<void (float x, float y)> callback);
 public:
     GameInstance() {
         read_config_file();

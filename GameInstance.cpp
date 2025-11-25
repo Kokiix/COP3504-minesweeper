@@ -16,7 +16,8 @@ void GameInstance::read_config_file() {
     // placeholder:
     n_rows = 16;
     n_cols = 30;
-    n_mines = 60;
+    n_mines = 5;
+    tiles_left_to_reveal = n_rows * n_cols - n_mines;
 }
 
 void GameInstance::load_image_assets() {
@@ -30,7 +31,7 @@ void GameInstance::load_image_assets() {
                     sf::IntRect({0, 0}, {32, 32}))));
     }
 
-    std::vector<std::string> ui_names {"debug", "face_happy", "face_lose"};
+    std::vector<std::string> ui_names {"debug", "face_happy", "face_lose", "face_win", "pause"};
     for (std::string s : ui_names) {
         textures.insert(
             std::pair<std::string, sf::Texture*>(
@@ -45,19 +46,33 @@ void GameInstance::load_image_assets() {
         number_textures[i] = sf::Texture(path.str(), false, sf::IntRect({0, 0}, {32, 32}));
     }
 
+    for (int i = 0; i < 10; i++) {
+        stopwatch_textures[i] = sf::Texture("../assets/images/digits.png", false, sf::IntRect({i * 21, 0}, {21, 32}));
+    }
+
 
     std::random_device rd;
     rng = std::mt19937(rd());
 }
 
 void GameInstance::init_ui_sprites() {
-    std::function create_sprite = [this](std::string name, int x_offset) {
+    std::function create_button = [this](std::string name, float center_offset) {
         sf::Sprite* s = new sf::Sprite(*textures[name]);
-        s->setPosition({(n_cols / 2 + x_offset) * 32.0f, (n_rows + 0.5f) * 32.0f});
+        s->setPosition({(n_cols / 2 + center_offset) * 32.0f, (n_rows + 0.5f) * 32.0f});
         this->UI_elements.insert(std::pair<std::string, sf::Sprite*>(name, s));
     };
-    create_sprite("face_happy", -1);
-    create_sprite("debug", -3);
+    create_button("face_happy", -1);
+    create_button("debug", -3);
+    create_button("pause", 1);
+
+    std::function create_stopwatch = [this](float x, std::string name) {
+        sf::Sprite* s = new sf::Sprite(stopwatch_textures[0]);
+        s->setPosition({x, (n_rows + 1) * 32.0f});
+        this->UI_elements.insert(std::pair<std::string, sf::Sprite*>(name, s));
+    };
+    create_stopwatch(32, "hundreds");
+    create_stopwatch(53, "tens");
+    create_stopwatch(74, "ones");
 }
 
 void GameInstance::welcome_loop() {
@@ -102,6 +117,9 @@ void GameInstance::board_setup() {
 
 void GameInstance::game_loop() {
     redraw_screen();
+    auto last_time = std::chrono::steady_clock::now();
+    auto curr_time = std::chrono::steady_clock::now();
+    int elapsed;
     while (window.isOpen()) {
         while (const std::optional event = window.pollEvent()) {
             if (auto click_event = event->getIf<sf::Event::MouseButtonPressed>()) {
@@ -109,6 +127,16 @@ void GameInstance::game_loop() {
                 redraw_screen();
             }
             else if (event->is<sf::Event::Closed>()) window.close();
+        }
+
+        if (!game_over && !paused) {
+            curr_time = std::chrono::steady_clock::now();
+            elapsed = std::chrono::duration<double>(curr_time - last_time).count();
+            if (elapsed >= 1 && time < 999) {
+                last_time = curr_time;
+                time++;
+                display_time();
+            }
         }
     }
 }
@@ -121,6 +149,8 @@ void GameInstance::handle_click(const sf::Event::MouseButtonPressed* event) {
         if (y >= n_rows) {
             if (x > n_cols / 2 - 2 && x < n_cols / 2 + 1) {
                 game_over = false;
+                time = 0;
+                tiles_left_to_reveal = n_rows * n_cols - n_mines;
                 UI_elements["face_happy"]->setTexture(*textures["face_happy"]);
                 board.clear();
                 board_setup();
@@ -128,7 +158,7 @@ void GameInstance::handle_click(const sf::Event::MouseButtonPressed* event) {
             } else if (x > n_cols / 2 - 4 && x < n_cols / 2 - 1) {
                 toggle_debug();
             }
-        } else if (!game_over) {
+        } else if (!game_over && !paused) {
             if (board[x][y].is_mine) {
                 game_over = true;
                 UI_elements["face_happy"]->setTexture(*textures["face_lose"]);
@@ -142,13 +172,21 @@ void GameInstance::handle_click(const sf::Event::MouseButtonPressed* event) {
 }
 
 void GameInstance::clear_tile(float x, float y) {
-    if (board[x][y].hidden && !board[x][y].is_mine && !board[x][y].flagged) {
-        board[x][y].tile_sprite.setTexture(*textures["tile_revealed"]);
-        board[x][y].hidden = false;
-        if (board[x][y].n_mines_near > 0) {
-            board[x][y].overlay_sprite.setTexture(number_textures[board[x][y].n_mines_near]);
-            board[x][y].draw_overlay = true;
-        } else {
+    Tile& t = board[x][y];
+    if (t.hidden && !t.is_mine && !t.flagged) {
+        t.tile_sprite.setTexture(*textures["tile_revealed"]);
+        t.hidden = false;
+        if (t.n_mines_near > 0) {
+            t.overlay_sprite.setTexture(number_textures[t.n_mines_near]);
+            t.draw_overlay = true;
+        } 
+
+        if (--tiles_left_to_reveal == 0) {
+            game_over = true;
+            UI_elements["face_happy"]->setTexture(*textures["face_win"]);
+        }
+
+        if (t.n_mines_near == 0) {
             operateOnNeighbors(x, y, [this](float x, float y) {this->clear_tile(x, y);});
         }
     }
@@ -188,11 +226,17 @@ void GameInstance::redraw_screen() {
             if (board[i][j].draw_overlay) window.draw(board[i][j].overlay_sprite);
         }
     }
-    // // TODO: draw dashboard
     for (auto pair : UI_elements) {
         window.draw(*pair.second);
     }
     window.display();
+}
+
+void GameInstance::display_time() {
+    UI_elements["ones"]->setTexture(stopwatch_textures[time % 10]);
+    UI_elements["tens"]->setTexture(stopwatch_textures[time / 10 % 10]);
+    UI_elements["hundreds"]->setTexture(stopwatch_textures[time / 100 % 10]);
+    redraw_screen();
 }
 
 void GameInstance::operateOnNeighbors(float x, float y, std::function<void (float x, float y)> callback) {
