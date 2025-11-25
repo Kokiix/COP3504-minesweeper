@@ -30,7 +30,7 @@ void GameInstance::load_image_assets() {
                     sf::IntRect({0, 0}, {32, 32}))));
     }
 
-    std::vector<std::string> ui_names {"debug", "face_happy"};
+    std::vector<std::string> ui_names {"debug", "face_happy", "face_lose"};
     for (std::string s : ui_names) {
         textures.insert(
             std::pair<std::string, sf::Texture*>(
@@ -51,13 +51,13 @@ void GameInstance::load_image_assets() {
 }
 
 void GameInstance::init_ui_sprites() {
-    sf::Sprite s = sf::Sprite(*textures["face_happy"]);
-    s.setPosition({(n_cols / 2 - 1) * 32.0f, (n_rows + 0.5f) * 32.0f});
-    UI_elements.push_back(s);
-
-    s.setTexture(*textures["debug"]);
-    s.setPosition({(n_cols / 2 - 3) * 32.0f, (n_rows + 0.5f) * 32.0f});
-    UI_elements.push_back(s);
+    std::function create_sprite = [this](std::string name, int x_offset) {
+        sf::Sprite* s = new sf::Sprite(*textures[name]);
+        s->setPosition({(n_cols / 2 + x_offset) * 32.0f, (n_rows + 0.5f) * 32.0f});
+        this->UI_elements.insert(std::pair<std::string, sf::Sprite*>(name, s));
+    };
+    create_sprite("face_happy", -1);
+    create_sprite("debug", -3);
 }
 
 void GameInstance::welcome_loop() {
@@ -120,14 +120,21 @@ void GameInstance::handle_click(const sf::Event::MouseButtonPressed* event) {
     if (event->button == sf::Mouse::Button::Left) {
         if (y >= n_rows) {
             if (x > n_cols / 2 - 2 && x < n_cols / 2 + 1) {
+                game_over = false;
+                UI_elements["face_happy"]->setTexture(*textures["face_happy"]);
                 board.clear();
                 board_setup();
                 redraw_screen();
             } else if (x > n_cols / 2 - 4 && x < n_cols / 2 - 1) {
                 toggle_debug();
             }
-        } else {
-            clear_tile(x, y);
+        } else if (!game_over) {
+            if (board[x][y].is_mine) {
+                game_over = true;
+                UI_elements["face_happy"]->setTexture(*textures["face_lose"]);
+            } else {
+                clear_tile(x, y);
+            }
         }
     } else if (event->button == sf::Mouse::Button::Right) {
         toggle_flag(x, y);
@@ -182,8 +189,8 @@ void GameInstance::redraw_screen() {
         }
     }
     // // TODO: draw dashboard
-    for (sf::Sprite s : UI_elements) {
-        window.draw(s);
+    for (auto pair : UI_elements) {
+        window.draw(*pair.second);
     }
     window.display();
 }
@@ -201,6 +208,9 @@ void GameInstance::operateOnNeighbors(float x, float y, std::function<void (floa
 
 GameInstance::~GameInstance() {
     for (auto pair : textures) {
+        delete pair.second;
+    }
+    for (auto pair : UI_elements) {
         delete pair.second;
     }
 }

@@ -27,9 +27,10 @@ class GameInstance {
     sf::Texture number_textures[9];
     sf::RenderWindow window;
     std::map<std::string, sf::Texture*> textures;
-    std::vector<sf::Sprite> UI_elements;
+    std::map<std::string, sf::Sprite*> UI_elements;
     std::vector<std::vector<Tile>> board;
     bool debug_mode = false;
+    bool game_over = false;
     std::mt19937 rng;
 
 
