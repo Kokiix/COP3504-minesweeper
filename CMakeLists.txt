@@ -20,8 +20,8 @@ file(GLOB BASE "*.cpp" "*.hpp" "*.h")
 add_executable(the-sweeper
         ${SRC}
         ${BASE}
-        minesweeper.cpp
-        minesweeper.h
+        GameInstance.cpp
+        GameInstance.h
 )
 
 # find_package(SFML COMPONENTS graphics window system REQUIRED)

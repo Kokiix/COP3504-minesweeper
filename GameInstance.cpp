@@ -1,4 +1,4 @@
-#include "minesweeper.h"
+#include "GameInstance.h"
 
 #include <iostream>
 #include <random>
@@ -20,15 +20,36 @@ void GameInstance::read_config_file() {
 }
 
 void GameInstance::load_image_assets() {
-    hidden_tile_texture = sf::Texture("../assets/images/tile_hidden.png", false, sf::IntRect({0, 0}, {32, 32}));
-    revealed_tile_texture = sf::Texture("../assets/images/tile_revealed.png", false, sf::IntRect({0, 0}, {32, 32}));
-    mine_texture = sf::Texture("../assets/images/mine.png", false, sf::IntRect({0, 0}, {32, 32}));
-    flag_texture = sf::Texture("../assets/images/flag.png", false, sf::IntRect({0, 0}, {32, 32}));
+    std::vector<std::string> texture_names {"tile_hidden", "tile_revealed", "mine", "flag"};
+    for (std::string s : texture_names) {
+        textures.insert(
+            std::pair<std::string, sf::Texture*>(
+                s,
+                new sf::Texture(
+                    "../assets/images/" + s + ".png", false,
+                    sf::IntRect({0, 0}, {32, 32}))));
+    }
+
+    std::vector<std::string> ui_names {"debug"};
+    for (std::string s : ui_names) {
+        textures.insert(
+            std::pair<std::string, sf::Texture*>(
+                s,
+                new sf::Texture(
+                    "../assets/images/" + s + ".png", false,
+                    sf::IntRect({0, 0}, {64, 64}))));
+    }
     for (size_t i = 1; i < 9; i++) {
         std::ostringstream path;
         path << "../assets/images/number_" << i << ".png";
         number_textures[i] = sf::Texture(path.str(), false, sf::IntRect({0, 0}, {32, 32}));
     }
+}
+
+void GameInstance::init_ui_sprites() {
+    sf::Sprite s = sf::Sprite(*textures["debug"]);
+    s.setPosition({n_cols / 2 * 32 - 32.0f, 32.0f * (n_rows + 0.5f)});
+    UI_elements.push_back(s);
 }
 
 void GameInstance::welcome_loop() {
@@ -39,7 +60,7 @@ void GameInstance::board_setup() {
     std::vector<Tile> shuffle_list;
     shuffle_list.reserve(n_rows * n_cols);
     for (size_t i = 0; i < n_rows * n_cols; i++) {
-        Tile t(hidden_tile_texture);
+        Tile t(*textures["tile_hidden"]);
         if (i < n_mines) {t.is_mine = true;}
         shuffle_list.emplace_back(t);
     }
@@ -85,16 +106,26 @@ void GameInstance::game_loop() {
 
 void GameInstance::handle_click(const sf::Event::MouseButtonPressed* event) {
     sf::Vector2i clickPos = event->position;
+    float x = clickPos.x / 32;
+    float y = clickPos.y / 32;
     if (event->button == sf::Mouse::Button::Left) {
-        clear_tile(clickPos.x / 32, clickPos.y / 32);
+        if (y >= n_rows) {
+            switch (x) {
+                case x > n_cols / 2 * 32 - 32.0f && x < n_cols / 2 * 32:
+                    toggle_debug();
+                    break;
+            }
+        } else {
+            clear_tile(x, y);
+        }
     } else if (event->button == sf::Mouse::Button::Right) {
-        toggle_flag(clickPos.x / 32, clickPos.y / 32);
+        toggle_flag(x, y);
     }
 }
 
 void GameInstance::clear_tile(float x, float y) {
     if (board[x][y].hidden && !board[x][y].is_mine && !board[x][y].flagged) {
-        board[x][y].tile_sprite.setTexture(revealed_tile_texture);
+        board[x][y].tile_sprite.setTexture(*textures["tile_revealed"]);
         board[x][y].hidden = false;
         if (board[x][y].n_mines_near > 0) {
             board[x][y].overlay_sprite.setTexture(number_textures[board[x][y].n_mines_near]);
@@ -112,7 +143,7 @@ void GameInstance::toggle_flag(float x, float y) {
             board[x][y].flagged = false;
         } else {
             board[x][y].draw_overlay = true;
-            board[x][y].overlay_sprite.setTexture(flag_texture);
+            board[x][y].overlay_sprite.setTexture(*textures["flag"]);
             board[x][y].flagged = true;
         }
     }
@@ -127,6 +158,9 @@ void GameInstance::redraw_screen() {
         }
     }
     // // TODO: draw dashboard
+    for (sf::Sprite s : UI_elements) {
+        window.draw(s);
+    }
     window.display();
 }
 
@@ -142,5 +176,7 @@ void GameInstance::operateOnNeighbors(float x, float y, std::function<void (floa
 }
 
 GameInstance::~GameInstance() {
-    // delete board;
+    for (auto pair : textures) {
+        delete pair.second;
+    }
 }

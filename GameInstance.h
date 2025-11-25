@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdio>
+#include <map>
 #include <SFML/Graphics/Texture.hpp>
 #include "SFML/Graphics/RenderWindow.hpp"
 #include "SFML/Graphics/Sprite.hpp"
@@ -22,17 +23,16 @@ class GameInstance {
     size_t n_rows;
     size_t n_cols;
     size_t n_mines;
-    sf::Texture hidden_tile_texture;
-    sf::Texture revealed_tile_texture;
-    sf::Texture mine_texture;
-    sf::Texture flag_texture;
     sf::Texture number_textures[9];
     sf::RenderWindow window;
+    std::map<std::string, sf::Texture*> textures;
+    std::vector<sf::Sprite> UI_elements;
     std::vector<std::vector<Tile>> board;
 
 
     void read_config_file();
     void load_image_assets();
+    void init_ui_sprites();
     void welcome_loop();
     void board_setup();
     void game_loop();
@@ -46,6 +46,7 @@ public:
     GameInstance() {
         read_config_file();
         load_image_assets();
+        init_ui_sprites();
 
         window = sf::RenderWindow(
             sf::VideoMode(
