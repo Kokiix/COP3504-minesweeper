@@ -15,7 +15,7 @@ void GameInstance::read_config_file() {
     // TODO
     // placeholder:
     n_rows = 16;
-    n_cols = 25;
+    n_cols = 30;
     n_mines = 60;
 }
 
@@ -30,7 +30,7 @@ void GameInstance::load_image_assets() {
                     sf::IntRect({0, 0}, {32, 32}))));
     }
 
-    std::vector<std::string> ui_names {"debug"};
+    std::vector<std::string> ui_names {"debug", "face_happy"};
     for (std::string s : ui_names) {
         textures.insert(
             std::pair<std::string, sf::Texture*>(
@@ -44,11 +44,19 @@ void GameInstance::load_image_assets() {
         path << "../assets/images/number_" << i << ".png";
         number_textures[i] = sf::Texture(path.str(), false, sf::IntRect({0, 0}, {32, 32}));
     }
+
+
+    std::random_device rd;
+    rng = std::mt19937(rd());
 }
 
 void GameInstance::init_ui_sprites() {
-    sf::Sprite s = sf::Sprite(*textures["debug"]);
-    s.setPosition({n_cols / 2 * 32 - 32.0f, 32.0f * (n_rows + 0.5f)});
+    sf::Sprite s = sf::Sprite(*textures["face_happy"]);
+    s.setPosition({(n_cols / 2 - 1) * 32.0f, (n_rows + 0.5f) * 32.0f});
+    UI_elements.push_back(s);
+
+    s.setTexture(*textures["debug"]);
+    s.setPosition({(n_cols / 2 - 3) * 32.0f, (n_rows + 0.5f) * 32.0f});
     UI_elements.push_back(s);
 }
 
@@ -66,8 +74,6 @@ void GameInstance::board_setup() {
     }
 
     // TODO: gen mines after first click to prevent instadeath
-    std::random_device rd;
-    std::mt19937 rng(rd());
     std::ranges::shuffle(shuffle_list, rng);
 
     for (size_t col = 0; col < n_cols; col++) {
@@ -81,10 +87,13 @@ void GameInstance::board_setup() {
 
     for (size_t col = 0; col < n_cols; col++) {
         for (size_t row = 0; row < n_rows; row++) {
-            if (board[col][row].is_mine) {
-                board[col][row].is_mine = true;
-                // board[col][row].tile_sprite.setTexture(mine_texture);
-
+            Tile& t = board[col][row];
+            if (t.is_mine) {
+                t.is_mine = true;
+                if (debug_mode) {
+                    t.overlay_sprite.setTexture(*textures["mine"]);
+                    t.draw_overlay = true;
+                }
                 operateOnNeighbors(col, row, [this](float x, float y) {board[x][y].n_mines_near++;});
             }
         }
@@ -110,10 +119,12 @@ void GameInstance::handle_click(const sf::Event::MouseButtonPressed* event) {
     float y = clickPos.y / 32;
     if (event->button == sf::Mouse::Button::Left) {
         if (y >= n_rows) {
-            switch (x) {
-                case x > n_cols / 2 * 32 - 32.0f && x < n_cols / 2 * 32:
-                    toggle_debug();
-                    break;
+            if (x > n_cols / 2 - 2 && x < n_cols / 2 + 1) {
+                board.clear();
+                board_setup();
+                redraw_screen();
+            } else if (x > n_cols / 2 - 4 && x < n_cols / 2 - 1) {
+                toggle_debug();
             }
         } else {
             clear_tile(x, y);
@@ -145,6 +156,19 @@ void GameInstance::toggle_flag(float x, float y) {
             board[x][y].draw_overlay = true;
             board[x][y].overlay_sprite.setTexture(*textures["flag"]);
             board[x][y].flagged = true;
+        }
+    }
+}
+
+void GameInstance::toggle_debug() {
+    debug_mode = !debug_mode;
+    for (size_t i = 0; i < n_cols; i++) {
+        for (size_t j = 0; j < n_rows; j++) {
+            Tile& t = board[i][j];
+            if (t.is_mine) {
+                t.overlay_sprite.setTexture(*textures["mine"]);
+                t.draw_overlay = debug_mode;
+            }
         }
     }
 }

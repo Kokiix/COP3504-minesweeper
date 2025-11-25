@@ -2,6 +2,7 @@
 
 #include <cstdio>
 #include <map>
+#include <random>
 #include <SFML/Graphics/Texture.hpp>
 #include "SFML/Graphics/RenderWindow.hpp"
 #include "SFML/Graphics/Sprite.hpp"
@@ -28,6 +29,8 @@ class GameInstance {
     std::map<std::string, sf::Texture*> textures;
     std::vector<sf::Sprite> UI_elements;
     std::vector<std::vector<Tile>> board;
+    bool debug_mode = false;
+    std::mt19937 rng;
 
 
     void read_config_file();
@@ -41,7 +44,9 @@ class GameInstance {
     void handle_click(const sf::Event::MouseButtonPressed* event);
     void clear_tile(float x, float y);
     void toggle_flag(float x, float y);
+    // void reset_board();
     void operateOnNeighbors(float x, float y, std::function<void (float x, float y)> callback);
+    void toggle_debug();
 public:
     GameInstance() {
         read_config_file();
