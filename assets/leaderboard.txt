@@ -1,5 +1,5 @@
-0 Yuu
-0 Alex
-2 Kkoki
-60 Lucas
-90 LucasA
+0 Zee
+10 Yuu
+11 Zee
+20 Alex
+30 Kkoki

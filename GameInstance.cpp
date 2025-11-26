@@ -79,6 +79,9 @@ void GameInstance::init_ui_sprites() {
     create_stopwatch(32, "hundreds");
     create_stopwatch(53, "tens");
     create_stopwatch(74, "ones");
+
+    create_stopwatch(window.getSize().x - 32, "n_mine_tens");
+    create_stopwatch(window.getSize().x - 53, "n_mine_ones");
 }
 
 void GameInstance::draw_welcome(std::string name) {
@@ -111,7 +114,7 @@ void GameInstance::welcome_loop() {
     std::string name_entry = "";
     while (welcome_window->isOpen()) {
         while (const std::optional event = welcome_window->pollEvent()) {
-            if (event->is<sf::Event::Closed>()) {
+            if (event->is<sf::Event::Closed>() && player_name != "") {
                 welcome_window->close();
                 break;
             }
@@ -208,6 +211,7 @@ void GameInstance::handle_click(const sf::Event::MouseButtonPressed* event) {
         } else if (!game_over && !paused) {
             if (board[x][y].is_mine && board[x][y].flagged == false) {
                 game_over = true;
+                if (!debug_mode) toggle_debug();
                 UI_elements["face_happy"]->setTexture(*textures["face_lose"]);
             } else {
                 clear_tile(x, y);
@@ -236,6 +240,7 @@ void GameInstance::handle_ui_click(float x) {
         paused = false;
         UI_elements["pause"]->setTexture(*textures["pause"]);
         UI_elements["face_happy"]->setTexture(*textures["face_happy"]);
+        if (debug_mode) toggle_debug();
         board.clear();
         board_setup();
         display_time();
@@ -290,7 +295,7 @@ void GameInstance::write_to_leaderboard() {
 }
 
 void GameInstance::toggle_flag(float x, float y) {
-    if (board[x][y].hidden) {
+    if (board[x][y].hidden && !game_over && !paused && !debug_mode) {
         if (board[x][y].flagged) {
             board[x][y].draw_overlay = false;
             board[x][y].flagged = false;

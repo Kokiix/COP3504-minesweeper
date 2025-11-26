@@ -36,7 +36,7 @@ class GameInstance {
     std::map<std::string, sf::Texture*> textures;
     std::map<std::string, sf::Sprite*> UI_elements;
     std::vector<std::vector<Tile>> board;
-    std::string player_name;
+    std::string player_name = "";
     bool debug_mode = false;
     bool game_over = false;
     bool paused = false;
