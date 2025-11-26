@@ -4,6 +4,8 @@
 #include <map>
 #include <random>
 #include <SFML/Graphics/Texture.hpp>
+
+#include "SFML/Graphics/Font.hpp"
 #include "SFML/Graphics/RenderWindow.hpp"
 #include "SFML/Graphics/Sprite.hpp"
 
@@ -28,6 +30,7 @@ class GameInstance {
     sf::Texture number_textures[9];
     sf::Texture stopwatch_textures[10];
     sf::RenderWindow window;
+    sf::Font font;
     std::map<std::string, sf::Texture*> textures;
     std::map<std::string, sf::Sprite*> UI_elements;
     std::vector<std::vector<Tile>> board;
@@ -39,7 +42,7 @@ class GameInstance {
 
 
     void read_config_file();
-    void load_image_assets();
+    void load_assets();
     void init_ui_sprites();
     void welcome_loop();
     void board_setup();
@@ -58,7 +61,7 @@ class GameInstance {
 public:
     GameInstance() {
         read_config_file();
-        load_image_assets();
+        load_assets();
         init_ui_sprites();
 
         window = sf::RenderWindow(

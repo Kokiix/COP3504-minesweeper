@@ -1,5 +1,6 @@
 #include "GameInstance.h"
 
+#include <fstream>
 #include <iostream>
 #include <random>
 #include <sstream>
@@ -10,17 +11,21 @@
 
 #include "SFML/Graphics/RenderWindow.hpp"
 #include "SFML/Graphics/Sprite.hpp"
+#include "SFML/Graphics/Text.hpp"
 
 void GameInstance::read_config_file() {
     // TODO
     // placeholder:
-    n_rows = 16;
-    n_cols = 30;
+    n_rows = 25;
+    n_cols = 10;
     n_mines = 5;
     tiles_revealed = 0;
 }
 
-void GameInstance::load_image_assets() {
+void GameInstance::load_assets() {
+    if (!font.openFromFile("../assets/font.ttf")) {
+        throw std::runtime_error("Could not open font file");
+    };
     std::vector<std::string> texture_names {"tile_hidden", "tile_revealed", "mine", "flag"};
     for (std::string s : texture_names) {
         textures.insert(
@@ -281,10 +286,37 @@ GameInstance::~GameInstance() {
 void GameInstance::leaderboard_loop() {
     sf::RenderWindow w(
     sf::VideoMode(
-        {static_cast<unsigned>(16 * n_cols), static_cast<unsigned>(n_rows * 16 + 50)}),
+        {static_cast<unsigned>(16 * 16), static_cast<unsigned>(16 * 16 + 50)}),
     "Minesweeper", sf::Style::Close);
 
+    w.clear(sf::Color::White);
+    sf::Text title(font, "LEADERBOARD", 20);
+    title.setStyle(sf::Text::Bold);
+    title.setStyle(sf::Text::Underlined);
+    title.setFillColor(sf::Color::Black);
+    title.setPosition({w.getSize().x / 2.0f - title.getLocalBounds().size.x / 2, w.getSize().y / 2.0f - 120.0f});
+    w.draw(title);
+
+    std::ostringstream body_string;
+    std::ifstream file("../assets/leaderboard.txt");
+    std::string score;
+    std::string name;
+    for (size_t i = 1; i < 6; i++) {
+        if (file.peek() != EOF) {
+            file >> score >> name;
+            score.pop_back();
+            body_string << i << ". " << score << "\t" << name;
+        }
+        body_string << "\n\n";
+    }
+    sf::Text body(font, body_string.str(), 18);
+    body.setStyle(sf::Text::Bold);
+    body.setFillColor(sf::Color::Black);
+    body.setPosition({w.getSize().x / 2.0f - body.getLocalBounds().size.x / 2, w.getSize().y / 2.0f - 60});
+    w.draw(body);
+
     w.display();
+
     while (w.isOpen()) {
         while (const std::optional event = w.pollEvent()) {
             if (event->is<sf::Event::Closed>()) w.close();
