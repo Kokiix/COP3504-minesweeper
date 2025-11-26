@@ -17,7 +17,7 @@ void GameInstance::read_config_file() {
     n_rows = 16;
     n_cols = 30;
     n_mines = 5;
-    tiles_left_to_reveal = n_rows * n_cols - n_mines;
+    tiles_revealed = 0;
 }
 
 void GameInstance::load_image_assets() {
@@ -31,7 +31,8 @@ void GameInstance::load_image_assets() {
                     sf::IntRect({0, 0}, {32, 32}))));
     }
 
-    std::vector<std::string> ui_names {"debug", "face_happy", "face_lose", "face_win", "pause"};
+    std::vector<std::string> ui_names {"debug", "face_happy", "face_lose", "face_win", "pause",
+        "play", "leaderboard"};
     for (std::string s : ui_names) {
         textures.insert(
             std::pair<std::string, sf::Texture*>(
@@ -61,9 +62,11 @@ void GameInstance::init_ui_sprites() {
         s->setPosition({(n_cols / 2 + center_offset) * 32.0f, (n_rows + 0.5f) * 32.0f});
         this->UI_elements.insert(std::pair<std::string, sf::Sprite*>(name, s));
     };
-    create_button("face_happy", -1);
-    create_button("debug", -3);
-    create_button("pause", 1);
+
+    create_button("debug", -5);
+    create_button("face_happy", -3);
+    create_button("pause", -1);
+    create_button("leaderboard", 1);
 
     std::function create_stopwatch = [this](float x, std::string name) {
         sf::Sprite* s = new sf::Sprite(stopwatch_textures[0]);
@@ -129,7 +132,7 @@ void GameInstance::game_loop() {
             else if (event->is<sf::Event::Closed>()) window.close();
         }
 
-        if (!game_over && !paused) {
+        if (!game_over && !paused && tiles_revealed > 0) {
             curr_time = std::chrono::steady_clock::now();
             elapsed = std::chrono::duration<double>(curr_time - last_time).count();
             if (elapsed >= 1 && time < 999) {
@@ -147,19 +150,9 @@ void GameInstance::handle_click(const sf::Event::MouseButtonPressed* event) {
     float y = clickPos.y / 32;
     if (event->button == sf::Mouse::Button::Left) {
         if (y >= n_rows) {
-            if (x > n_cols / 2 - 2 && x < n_cols / 2 + 1) {
-                game_over = false;
-                time = 0;
-                tiles_left_to_reveal = n_rows * n_cols - n_mines;
-                UI_elements["face_happy"]->setTexture(*textures["face_happy"]);
-                board.clear();
-                board_setup();
-                redraw_screen();
-            } else if (x > n_cols / 2 - 4 && x < n_cols / 2 - 1) {
-                toggle_debug();
-            }
+            handle_ui_click(x);
         } else if (!game_over && !paused) {
-            if (board[x][y].is_mine) {
+            if (board[x][y].is_mine && board[x][y].flagged == false) {
                 game_over = true;
                 UI_elements["face_happy"]->setTexture(*textures["face_lose"]);
             } else {
@@ -168,6 +161,32 @@ void GameInstance::handle_click(const sf::Event::MouseButtonPressed* event) {
         }
     } else if (event->button == sf::Mouse::Button::Right) {
         toggle_flag(x, y);
+    }
+}
+
+void GameInstance::handle_ui_click(float x) {
+    if (x > n_cols / 2 && x < n_cols / 2 + 3) {
+        leaderboard_loop();
+    } else if (x > n_cols / 2 - 2 && x < n_cols / 2 + 1) {
+        if (paused) {
+            paused = false;
+            UI_elements["pause"]->setTexture(*textures["pause"]);
+        } else {
+            paused = true;
+            UI_elements["pause"]->setTexture(*textures["play"]);
+        }
+    } else if (x > n_cols / 2 - 4 && x < n_cols / 2 - 1) {
+        game_over = false;
+        time = 0;
+        tiles_revealed = 0;
+        paused = false;
+        UI_elements["pause"]->setTexture(*textures["pause"]);
+        UI_elements["face_happy"]->setTexture(*textures["face_happy"]);
+        board.clear();
+        board_setup();
+        display_time();
+    } else if (x > n_cols / 2 - 6 && x < n_cols / 2 - 3) {
+        toggle_debug();
     }
 }
 
@@ -181,7 +200,7 @@ void GameInstance::clear_tile(float x, float y) {
             t.draw_overlay = true;
         } 
 
-        if (--tiles_left_to_reveal == 0) {
+        if (++tiles_revealed == n_cols * n_rows - n_mines) {
             game_over = true;
             UI_elements["face_happy"]->setTexture(*textures["face_win"]);
         }
@@ -256,5 +275,19 @@ GameInstance::~GameInstance() {
     }
     for (auto pair : UI_elements) {
         delete pair.second;
+    }
+}
+
+void GameInstance::leaderboard_loop() {
+    sf::RenderWindow w(
+    sf::VideoMode(
+        {static_cast<unsigned>(16 * n_cols), static_cast<unsigned>(n_rows * 16 + 50)}),
+    "Minesweeper", sf::Style::Close);
+
+    w.display();
+    while (w.isOpen()) {
+        while (const std::optional event = w.pollEvent()) {
+            if (event->is<sf::Event::Closed>()) w.close();
+        }
     }
 }

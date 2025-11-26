@@ -24,7 +24,7 @@ class GameInstance {
     size_t n_rows;
     size_t n_cols;
     size_t n_mines;
-    size_t tiles_left_to_reveal;
+    size_t tiles_revealed;
     sf::Texture number_textures[9];
     sf::Texture stopwatch_textures[10];
     sf::RenderWindow window;
@@ -47,11 +47,14 @@ class GameInstance {
 
     void redraw_screen();
     void display_time();
+    void handle_ui_click(float x);
     void handle_click(const sf::Event::MouseButtonPressed* event);
     void clear_tile(float x, float y);
     void toggle_flag(float x, float y);
     void toggle_debug();
     void operateOnNeighbors(float x, float y, std::function<void (float x, float y)> callback);
+
+    void leaderboard_loop();
 public:
     GameInstance() {
         read_config_file();
