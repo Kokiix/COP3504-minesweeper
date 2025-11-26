@@ -16,9 +16,9 @@
 void GameInstance::read_config_file() {
     // TODO
     // placeholder:
-    n_rows = 25;
-    n_cols = 10;
-    n_mines = 5;
+    n_rows = 16;
+    n_cols = 16;
+    n_mines = 40;
     tiles_revealed = 0;
 }
 
@@ -68,10 +68,10 @@ void GameInstance::init_ui_sprites() {
         this->UI_elements.insert(std::pair<std::string, sf::Sprite*>(name, s));
     };
 
-    create_button("debug", -5);
-    create_button("face_happy", -3);
-    create_button("pause", -1);
-    create_button("leaderboard", 1);
+    create_button("debug", -4);
+    create_button("face_happy", -2);
+    create_button("pause", 0);
+    create_button("leaderboard", 2);
 
     std::function create_stopwatch = [this](float x, std::string name) {
         sf::Sprite* s = new sf::Sprite(stopwatch_textures[0]);
@@ -170,9 +170,9 @@ void GameInstance::handle_click(const sf::Event::MouseButtonPressed* event) {
 }
 
 void GameInstance::handle_ui_click(float x) {
-    if (x > n_cols / 2 && x < n_cols / 2 + 3) {
+    if (x > n_cols / 2 + 1 && x < n_cols / 2 + 4) {
         leaderboard_loop();
-    } else if (x > n_cols / 2 - 2 && x < n_cols / 2 + 1) {
+    } else if (x > n_cols / 2 - 1 && x < n_cols / 2 + 2) {
         if (paused) {
             paused = false;
             UI_elements["pause"]->setTexture(*textures["pause"]);
@@ -180,7 +180,7 @@ void GameInstance::handle_ui_click(float x) {
             paused = true;
             UI_elements["pause"]->setTexture(*textures["play"]);
         }
-    } else if (x > n_cols / 2 - 4 && x < n_cols / 2 - 1) {
+    } else if (x > n_cols / 2 - 3 && x < n_cols / 2) {
         game_over = false;
         time = 0;
         tiles_revealed = 0;
@@ -190,7 +190,7 @@ void GameInstance::handle_ui_click(float x) {
         board.clear();
         board_setup();
         display_time();
-    } else if (x > n_cols / 2 - 6 && x < n_cols / 2 - 3) {
+    } else if (x > n_cols / 2 - 5 && x < n_cols / 2 - 2) {
         toggle_debug();
     }
 }
