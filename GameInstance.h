@@ -8,6 +8,7 @@
 #include "SFML/Graphics/Font.hpp"
 #include "SFML/Graphics/RenderWindow.hpp"
 #include "SFML/Graphics/Sprite.hpp"
+#include "SFML/Graphics/Text.hpp"
 
 class Tile {
 public:
@@ -30,10 +31,12 @@ class GameInstance {
     sf::Texture number_textures[9];
     sf::Texture stopwatch_textures[10];
     sf::RenderWindow window;
+    sf::RenderWindow* welcome_window;
     sf::Font font;
     std::map<std::string, sf::Texture*> textures;
     std::map<std::string, sf::Sprite*> UI_elements;
     std::vector<std::vector<Tile>> board;
+    std::string player_name;
     bool debug_mode = false;
     bool game_over = false;
     bool paused = false;
@@ -44,10 +47,11 @@ class GameInstance {
     void read_config_file();
     void load_assets();
     void init_ui_sprites();
+    void draw_welcome(std::string name);
     void welcome_loop();
+    void handle_typing(const sf::Event::KeyPressed* e, sf::Text& entry);
     void board_setup();
     void game_loop();
-
     void redraw_screen();
     void display_time();
     void handle_ui_click(float x);
@@ -56,7 +60,7 @@ class GameInstance {
     void toggle_flag(float x, float y);
     void toggle_debug();
     void operateOnNeighbors(float x, float y, std::function<void (float x, float y)> callback);
-
+    void write_to_leaderboard();
     void leaderboard_loop();
 public:
     GameInstance() {
@@ -65,12 +69,19 @@ public:
         init_ui_sprites();
 
         window = sf::RenderWindow(
-            sf::VideoMode(
-                {static_cast<unsigned>(32 * n_cols), static_cast<unsigned>(n_rows * 32 + 100)}),
-            "Minesweeper", sf::Style::Close);
-
-        welcome_loop();
+        sf::VideoMode(
+            {static_cast<unsigned>(32 * n_cols), static_cast<unsigned>(n_rows * 32 + 100)}),
+        "Minesweeper", sf::Style::Close);
         board_setup();
+        redraw_screen();
+
+        welcome_window = new sf::RenderWindow(
+            sf::VideoMode({static_cast<unsigned>(16 * 32 + 100), static_cast<unsigned>(16 * 32)}),
+            "Minesweeper",
+            sf::Style::Close);
+        welcome_loop();
+        delete welcome_window;
+
         game_loop();
     }
     ~GameInstance();

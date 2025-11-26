@@ -81,8 +81,59 @@ void GameInstance::init_ui_sprites() {
     create_stopwatch(74, "ones");
 }
 
+void GameInstance::draw_welcome(std::string name) {
+    welcome_window->clear(sf::Color::White);
+    sf::Text title(font, "WELCOME TO MINESWEEPER!", 24);
+    title.setStyle(sf::Text::Bold);
+    title.setStyle(sf::Text::Underlined);
+    title.setFillColor(sf::Color::Black);
+    title.setPosition({welcome_window->getSize().x / 2.0f - title.getLocalBounds().size.x / 2, welcome_window->getSize().y / 5.0f});
+    welcome_window->draw(title);
+
+    sf::Text prompt(font, "Enter Your Name:", 20);
+    prompt.setStyle(sf::Text::Bold);
+    prompt.setFillColor(sf::Color::Black);
+    prompt.setPosition({welcome_window->getSize().x / 2.0f - prompt.getLocalBounds().size.x / 2, welcome_window->getSize().y / 3.0f});
+    welcome_window->draw(prompt);
+
+    sf::Text name_entry(font, name + "|", 18);
+    name_entry.setStyle(sf::Text::Bold);
+    name_entry.setFillColor(sf::Color::Black);
+    name_entry.setPosition({welcome_window->getSize().x / 2.0f - name_entry.getLocalBounds().size.x / 2,
+        welcome_window->getSize().y / 3.0f + prompt.getLocalBounds().size.y + 15.0f});
+    welcome_window->draw(name_entry);
+
+    welcome_window->display();
+}
+
 void GameInstance::welcome_loop() {
-    // TODO
+    draw_welcome("");
+    std::string name_entry = "";
+    while (welcome_window->isOpen()) {
+        while (const std::optional event = welcome_window->pollEvent()) {
+            if (event->is<sf::Event::Closed>()) {
+                welcome_window->close();
+                break;
+            }
+
+            if (auto e = event->getIf<sf::Event::TextEntered>()) {
+                if (e->unicode == 10 && name_entry != "") {
+                    player_name = name_entry;
+                    welcome_window->close();
+                    break;
+                }
+
+                if (e->unicode == 8 && name_entry != "") {
+                    name_entry.pop_back();
+                    draw_welcome(name_entry);
+                } else if (std::isalpha(e->unicode) && name_entry.length() < 10) {
+                    if (name_entry == "") name_entry.push_back(std::toupper(e->unicode));
+                    else name_entry.push_back(std::tolower(e->unicode));
+                    draw_welcome(name_entry);
+                }
+            }
+        }
+    }
 }
 
 void GameInstance::board_setup() {
@@ -205,6 +256,7 @@ void GameInstance::clear_tile(float x, float y) {
 
         if (++tiles_revealed == n_cols * n_rows - n_mines) {
             game_over = true;
+            write_to_leaderboard();
             UI_elements["face_happy"]->setTexture(*textures["face_win"]);
         }
 
@@ -212,6 +264,29 @@ void GameInstance::clear_tile(float x, float y) {
             operateOnNeighbors(x, y, [this](float x, float y) {this->clear_tile(x, y);});
         }
     }
+}
+
+void GameInstance::write_to_leaderboard() {
+    std::fstream file("../assets/leaderboard.txt");
+    std::ostringstream new_leaderboard;
+    std::string score;
+    std::string name;
+    bool made_change = false;
+    for (size_t i = 1; i < 6; i++) {
+        if (file.peek() != EOF) {
+            file >> score >> name;
+            if (time <= std::stoi(score) && !made_change) {
+                new_leaderboard << time << " " << player_name << "\n";
+                made_change = true;
+            }
+            if (i == 5 && made_change) continue;
+            new_leaderboard << score << " " << name << "\n";
+        }
+    }
+    file.close();
+    file.open("../assets/leaderboard.txt", std::ios::out | std::ios::trunc);
+    file << new_leaderboard.str();
+    file.close();
 }
 
 void GameInstance::toggle_flag(float x, float y) {
@@ -302,8 +377,15 @@ void GameInstance::leaderboard_loop() {
     for (size_t i = 1; i < 6; i++) {
         if (file.peek() != EOF) {
             file >> score >> name;
-            score.pop_back();
-            body_string << i << ". " << score << "\t" << name;
+            int t = std::stoi(score);
+            int min = t / 60;
+            int sec = t % 60;
+            std::string min_pad = min < 10 ? "0" : "";
+            std::string sec_pad = sec < 10 ? "0" : "";
+            body_string << i << ". " << min_pad << min << ":" << sec_pad << sec << "\t" << name;
+            if (std::stoi(score) == time && name == player_name) {
+                body_string << "*";
+            }
         }
         body_string << "\n\n";
     }
