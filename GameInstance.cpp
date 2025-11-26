@@ -14,12 +14,10 @@
 #include "SFML/Graphics/Text.hpp"
 
 void GameInstance::read_config_file() {
-    // TODO
-    // placeholder:
-    n_rows = 16;
-    n_cols = 16;
-    n_mines = 40;
+    std::ifstream config_file("../assets/config.cfg");
+    config_file >> n_cols >> n_rows >> n_mines;
     tiles_revealed = 0;
+    config_file.close();
 }
 
 void GameInstance::load_assets() {
@@ -309,6 +307,7 @@ void GameInstance::leaderboard_loop() {
         }
         body_string << "\n\n";
     }
+    file.close();
     sf::Text body(font, body_string.str(), 18);
     body.setStyle(sf::Text::Bold);
     body.setFillColor(sf::Color::Black);
