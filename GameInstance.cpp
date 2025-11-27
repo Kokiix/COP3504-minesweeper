@@ -80,8 +80,8 @@ void GameInstance::init_ui_sprites() {
     create_stopwatch(53, "tens");
     create_stopwatch(74, "ones");
 
-    create_stopwatch(window.getSize().x - 32, "n_mine_tens");
-    create_stopwatch(window.getSize().x - 53, "n_mine_ones");
+    create_stopwatch(n_cols * 32 - 64, "n_mine_tens");
+    create_stopwatch(n_cols * 32 - 43, "n_mine_ones");
 }
 
 void GameInstance::draw_welcome(std::string name) {
@@ -176,7 +176,7 @@ void GameInstance::board_setup() {
 }
 
 void GameInstance::game_loop() {
-    redraw_screen();
+    draw_screen();
     auto last_time = std::chrono::steady_clock::now();
     auto curr_time = std::chrono::steady_clock::now();
     int elapsed;
@@ -184,7 +184,7 @@ void GameInstance::game_loop() {
         while (const std::optional event = window.pollEvent()) {
             if (auto click_event = event->getIf<sf::Event::MouseButtonPressed>()) {
                 handle_click(click_event);
-                redraw_screen();
+                draw_screen();
             }
             else if (event->is<sf::Event::Closed>()) window.close();
         }
@@ -320,7 +320,7 @@ void GameInstance::toggle_debug() {
     }
 }
 
-void GameInstance::redraw_screen() {
+void GameInstance::draw_screen() {
     window.clear(sf::Color::White);
     for (size_t i = 0; i < n_cols; i++) {
         for (size_t j = 0; j < n_rows; j++) {
@@ -338,7 +338,7 @@ void GameInstance::display_time() {
     UI_elements["ones"]->setTexture(stopwatch_textures[time % 10]);
     UI_elements["tens"]->setTexture(stopwatch_textures[time / 10 % 10]);
     UI_elements["hundreds"]->setTexture(stopwatch_textures[time / 100 % 10]);
-    redraw_screen();
+    draw_screen();
 }
 
 void GameInstance::operateOnNeighbors(float x, float y, std::function<void (float x, float y)> callback) {

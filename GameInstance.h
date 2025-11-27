@@ -24,45 +24,51 @@ public:
 };
 
 class GameInstance {
+    // Core process (taking place in constructor below)
     size_t n_rows;
     size_t n_cols;
     size_t n_mines;
-    size_t tiles_revealed;
+    void read_config_file();
     sf::Texture number_textures[9];
     sf::Texture stopwatch_textures[10];
-    sf::RenderWindow window;
-    sf::RenderWindow* welcome_window;
     sf::Font font;
     std::map<std::string, sf::Texture*> textures;
+    void load_assets();
     std::map<std::string, sf::Sprite*> UI_elements;
+    void init_ui_sprites();
+
+    // game window is created
+    sf::RenderWindow window;
     std::vector<std::vector<Tile>> board;
+    size_t tiles_revealed;
+    void board_setup();
+    void draw_screen();
+
+    // welcome window is created
+    sf::RenderWindow* welcome_window;
     std::string player_name = "";
+    void draw_welcome(std::string name);
+    void welcome_loop();
+
     bool debug_mode = false;
     bool game_over = false;
     bool paused = false;
     size_t time = 0;
     std::mt19937 rng;
-
-
-    void read_config_file();
-    void load_assets();
-    void init_ui_sprites();
-    void draw_welcome(std::string name);
-    void welcome_loop();
-    void handle_typing(const sf::Event::KeyPressed* e, sf::Text& entry);
-    void board_setup();
     void game_loop();
-    void redraw_screen();
-    void display_time();
-    void handle_ui_click(float x);
     void handle_click(const sf::Event::MouseButtonPressed* event);
+    void handle_ui_click(float x);
+
     void clear_tile(float x, float y);
     void toggle_flag(float x, float y);
     void toggle_debug();
     void operateOnNeighbors(float x, float y, std::function<void (float x, float y)> callback);
+
+    void display_time();
     void write_to_leaderboard();
     void leaderboard_loop();
 public:
+    ~GameInstance();
     GameInstance() {
         read_config_file();
         load_assets();
@@ -73,7 +79,7 @@ public:
             {static_cast<unsigned>(32 * n_cols), static_cast<unsigned>(n_rows * 32 + 100)}),
         "Minesweeper", sf::Style::Close);
         board_setup();
-        redraw_screen();
+        draw_screen();
 
         welcome_window = new sf::RenderWindow(
             sf::VideoMode({static_cast<unsigned>(16 * 32 + 100), static_cast<unsigned>(16 * 32)}),
@@ -84,5 +90,4 @@ public:
 
         game_loop();
     }
-    ~GameInstance();
 };
