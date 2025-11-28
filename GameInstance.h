@@ -27,10 +27,10 @@ class GameInstance {
     // Core process (taking place in constructor below)
     size_t n_rows;
     size_t n_cols;
-    size_t n_mines;
+    int n_mines;
     void read_config_file();
     sf::Texture number_textures[9];
-    sf::Texture stopwatch_textures[10];
+    sf::Texture stopwatch_textures[11];
     sf::Font font;
     std::map<std::string, sf::Texture*> textures;
     void load_assets();
@@ -53,6 +53,7 @@ class GameInstance {
     bool debug_mode = false;
     bool game_over = false;
     bool paused = false;
+    int n_flagged = 0;
     size_t time = 0;
     std::mt19937 rng;
     void game_loop();

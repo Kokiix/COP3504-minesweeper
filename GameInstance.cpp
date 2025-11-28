@@ -50,7 +50,7 @@ void GameInstance::load_assets() {
         number_textures[i] = sf::Texture(path.str(), false, sf::IntRect({0, 0}, {32, 32}));
     }
 
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 11; i++) {
         stopwatch_textures[i] = sf::Texture("../assets/images/digits.png", false, sf::IntRect({i * 21, 0}, {21, 32}));
     }
 
@@ -80,8 +80,12 @@ void GameInstance::init_ui_sprites() {
     create_stopwatch(53, "tens");
     create_stopwatch(74, "ones");
 
-    create_stopwatch(n_cols * 32 - 64, "n_mine_tens");
-    create_stopwatch(n_cols * 32 - 43, "n_mine_ones");
+    create_stopwatch(n_cols * 32 - 96, "n_mine_sign");
+    create_stopwatch(n_cols * 32 - 75, "n_mine_tens");
+    create_stopwatch(n_cols * 32 - 54, "n_mine_ones");
+
+    UI_elements["n_mine_tens"]->setTexture(stopwatch_textures[std::abs(n_mines - n_flagged) / 10]);
+    UI_elements["n_mine_ones"]->setTexture(stopwatch_textures[std::abs(n_mines - n_flagged) % 10]);
 }
 
 void GameInstance::draw_welcome(std::string name) {
@@ -175,6 +179,20 @@ void GameInstance::board_setup() {
     }
 }
 
+void GameInstance::draw_screen() {
+    window.clear(sf::Color::White);
+    for (size_t i = 0; i < n_cols; i++) {
+        for (size_t j = 0; j < n_rows; j++) {
+            window.draw(board[i][j].tile_sprite);
+            if (board[i][j].draw_overlay) window.draw(board[i][j].overlay_sprite);
+        }
+    }
+    for (auto pair : UI_elements) {
+        window.draw(*pair.second);
+    }
+    window.display();
+}
+
 void GameInstance::game_loop() {
     draw_screen();
     auto last_time = std::chrono::steady_clock::now();
@@ -217,7 +235,8 @@ void GameInstance::handle_click(const sf::Event::MouseButtonPressed* event) {
                 clear_tile(x, y);
             }
         }
-    } else if (event->button == sf::Mouse::Button::Right) {
+    } else if (event->button == sf::Mouse::Button::Right && y < n_rows) {
+        if (debug_mode && board[x][y].is_mine) return;
         toggle_flag(x, y);
     }
 }
@@ -237,9 +256,12 @@ void GameInstance::handle_ui_click(float x) {
         game_over = false;
         time = 0;
         tiles_revealed = 0;
+        n_flagged = false;
         paused = false;
         UI_elements["pause"]->setTexture(*textures["pause"]);
         UI_elements["face_happy"]->setTexture(*textures["face_happy"]);
+        UI_elements["n_mine_tens"]->setTexture(stopwatch_textures[std::abs(n_mines - n_flagged) / 10]);
+        UI_elements["n_mine_ones"]->setTexture(stopwatch_textures[std::abs(n_mines - n_flagged) % 10]);
         if (debug_mode) toggle_debug();
         board.clear();
         board_setup();
@@ -257,7 +279,7 @@ void GameInstance::clear_tile(float x, float y) {
         if (t.n_mines_near > 0) {
             t.overlay_sprite.setTexture(number_textures[t.n_mines_near]);
             t.draw_overlay = true;
-        } 
+        }
 
         if (++tiles_revealed == n_cols * n_rows - n_mines) {
             game_over = true;
@@ -271,76 +293,6 @@ void GameInstance::clear_tile(float x, float y) {
     }
 }
 
-void GameInstance::write_to_leaderboard() {
-    std::fstream file("../assets/leaderboard.txt");
-    std::ostringstream new_leaderboard;
-    std::string score;
-    std::string name;
-    bool made_change = false;
-    for (size_t i = 1; i < 6; i++) {
-        if (file.peek() != EOF) {
-            file >> score >> name;
-            if (time <= std::stoi(score) && !made_change) {
-                new_leaderboard << time << " " << player_name << "\n";
-                made_change = true;
-            }
-            if (i == 5 && made_change) continue;
-            new_leaderboard << score << " " << name << "\n";
-        }
-    }
-    file.close();
-    file.open("../assets/leaderboard.txt", std::ios::out | std::ios::trunc);
-    file << new_leaderboard.str();
-    file.close();
-}
-
-void GameInstance::toggle_flag(float x, float y) {
-    if (board[x][y].hidden && !game_over && !paused && !debug_mode) {
-        if (board[x][y].flagged) {
-            board[x][y].draw_overlay = false;
-            board[x][y].flagged = false;
-        } else {
-            board[x][y].draw_overlay = true;
-            board[x][y].overlay_sprite.setTexture(*textures["flag"]);
-            board[x][y].flagged = true;
-        }
-    }
-}
-
-void GameInstance::toggle_debug() {
-    debug_mode = !debug_mode;
-    for (size_t i = 0; i < n_cols; i++) {
-        for (size_t j = 0; j < n_rows; j++) {
-            Tile& t = board[i][j];
-            if (t.is_mine) {
-                t.overlay_sprite.setTexture(*textures["mine"]);
-                t.draw_overlay = debug_mode;
-            }
-        }
-    }
-}
-
-void GameInstance::draw_screen() {
-    window.clear(sf::Color::White);
-    for (size_t i = 0; i < n_cols; i++) {
-        for (size_t j = 0; j < n_rows; j++) {
-            window.draw(board[i][j].tile_sprite);
-            if (board[i][j].draw_overlay) window.draw(board[i][j].overlay_sprite);
-        }
-    }
-    for (auto pair : UI_elements) {
-        window.draw(*pair.second);
-    }
-    window.display();
-}
-
-void GameInstance::display_time() {
-    UI_elements["ones"]->setTexture(stopwatch_textures[time % 10]);
-    UI_elements["tens"]->setTexture(stopwatch_textures[time / 10 % 10]);
-    UI_elements["hundreds"]->setTexture(stopwatch_textures[time / 100 % 10]);
-    draw_screen();
-}
-
 void GameInstance::operateOnNeighbors(float x, float y, std::function<void (float x, float y)> callback) {
     int col_end = x == n_cols - 1 ? 1 : 2;
     int row_end = y == n_rows - 1 ? 1 : 2;
@@ -352,13 +304,45 @@ void GameInstance::operateOnNeighbors(float x, float y, std::function<void (floa
     }
 }
 
-GameInstance::~GameInstance() {
-    for (auto pair : textures) {
-        delete pair.second;
+void GameInstance::toggle_flag(float x, float y) {
+    if (board[x][y].hidden && !game_over && !paused) {
+        if (board[x][y].flagged) {
+            board[x][y].draw_overlay = false;
+            board[x][y].flagged = false;
+            n_flagged--;
+        } else {
+            board[x][y].draw_overlay = true;
+            board[x][y].overlay_sprite.setTexture(*textures["flag"]);
+            board[x][y].flagged = true;
+            n_flagged++;
+        }
+
+        if (n_flagged > n_mines) UI_elements["n_mine_sign"]->setTexture(stopwatch_textures[10]);
+        else UI_elements["n_mine_sign"]->setTexture(stopwatch_textures[0]);
+        UI_elements["n_mine_tens"]->setTexture(stopwatch_textures[std::abs(n_mines - n_flagged) / 10]);
+        UI_elements["n_mine_ones"]->setTexture(stopwatch_textures[std::abs(n_mines - n_flagged) % 10]);
     }
-    for (auto pair : UI_elements) {
-        delete pair.second;
+}
+
+void GameInstance::toggle_debug() {
+    debug_mode = !debug_mode;
+    for (size_t i = 0; i < n_cols; i++) {
+        for (size_t j = 0; j < n_rows; j++) {
+            Tile& t = board[i][j];
+            if (t.is_mine) {
+                if (t.flagged) toggle_flag(i, j);
+                t.overlay_sprite.setTexture(*textures["mine"]);
+                t.draw_overlay = debug_mode;
+            }
+        }
     }
+}
+
+void GameInstance::display_time() {
+    UI_elements["ones"]->setTexture(stopwatch_textures[time % 10]);
+    UI_elements["tens"]->setTexture(stopwatch_textures[time / 10 % 10]);
+    UI_elements["hundreds"]->setTexture(stopwatch_textures[time / 100 % 10]);
+    draw_screen();
 }
 
 void GameInstance::leaderboard_loop() {
@@ -407,5 +391,37 @@ void GameInstance::leaderboard_loop() {
         while (const std::optional event = w.pollEvent()) {
             if (event->is<sf::Event::Closed>()) w.close();
         }
+    }
+}
+
+void GameInstance::write_to_leaderboard() {
+    std::fstream file("../assets/leaderboard.txt");
+    std::ostringstream new_leaderboard;
+    std::string score;
+    std::string name;
+    bool made_change = false;
+    for (size_t i = 1; i < 6; i++) {
+        if (file.peek() != EOF) {
+            file >> score >> name;
+            if (time <= std::stoi(score) && !made_change) {
+                new_leaderboard << time << " " << player_name << "\n";
+                made_change = true;
+            }
+            if (i == 5 && made_change) continue;
+            new_leaderboard << score << " " << name << "\n";
+        }
+    }
+    file.close();
+    file.open("../assets/leaderboard.txt", std::ios::out | std::ios::trunc);
+    file << new_leaderboard.str();
+    file.close();
+}
+
+GameInstance::~GameInstance() {
+    for (auto pair : textures) {
+        delete pair.second;
+    }
+    for (auto pair : UI_elements) {
+        delete pair.second;
     }
 }
