@@ -1,5 +1,5 @@
 Name: Kenneth Deng
-Section: N/A
+Section: Period 4
 UFL email: kenneth.deng
 System: macOS (M1)
 Compiler: g++
